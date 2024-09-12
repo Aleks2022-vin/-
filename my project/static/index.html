@@ -1,0 +1,110 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Image Viewer</title>
+    <style>
+        .image-list img {
+            width: 100px;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        .selected {
+            border-color: red;
+        }
+        #main-image {
+            max-width: 100%;
+        }
+        .controls {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="image-list">
+    <!-- Превью изображений -->
+</div>
+
+<div>
+    <img id="main-image" src="" alt="Main Image">
+    <p id="author-name">Author: </p>
+</div>
+
+<div class="controls">
+    <button id="new-images">NEW</button>
+    <button id="toggle-timer">Stop Timer</button>
+</div>
+
+<script>
+    let timer;
+    let images = [];
+    let currentIndex = 0;
+    let timerRunning = true;
+
+    document.getElementById('new-images').addEventListener('click', loadImages);
+    document.getElementById('toggle-timer').addEventListener('click', toggleTimer);
+
+    function loadImages() {
+        fetch('/get-images')
+            .then(response => response.json())
+            .then(data => {
+                images = data;
+                displayThumbnails();
+                selectImage(0); // Автоматически выбираем первое изображение
+            });
+    }
+
+    function displayThumbnails() {
+        const imageList = document.querySelector('.image-list');
+        imageList.innerHTML = ''; // Очищаем старые изображения
+
+        images.forEach((img, index) => {
+            const imgElement = document.createElement('img');
+            imgElement.src = img.url;
+            imgElement.addEventListener('click', () => selectImage(index));
+            imageList.appendChild(imgElement);
+        });
+    }
+
+    function selectImage(index) {
+        const thumbnails = document.querySelectorAll('.image-list img');
+        thumbnails.forEach((thumb, i) => {
+            thumb.classList.toggle('selected', i === index);
+        });
+
+        document.getElementById('main-image').src = images[index].url;
+        document.getElementById('author-name').textContent = `Author: ${images[index].author}`;
+        currentIndex = index;
+    }
+
+    function startTimer() {
+        timer = setInterval(() => {
+            currentIndex = (currentIndex + 1) % images.length;
+            selectImage(currentIndex);
+        }, 3000); // Меняем изображение каждые 3 секунды
+    }
+
+    function stopTimer() {
+        clearInterval(timer);
+    }
+
+    function toggleTimer() {
+        if (timerRunning) {
+            stopTimer();
+            document.getElementById('toggle-timer').textContent = 'Start Timer';
+        } else {
+            startTimer();
+            document.getElementById('toggle-timer').textContent = 'Stop Timer';
+        }
+        timerRunning = !timerRunning;
+    }
+
+    loadImages(); // Загружаем изображения при старте
+    startTimer(); // Запускаем таймер
+</script>
+
+</body>
+</html>
